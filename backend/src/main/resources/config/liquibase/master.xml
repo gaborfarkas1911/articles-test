@@ -1,0 +1,27 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet id="article table" author="Farkas Gábor">
+        <sqlFile dbms="mysql"
+                 path="changelog/article.sql"
+                 relativeToChangelogFile="true"/>
+    </changeSet>
+
+    <changeSet id="article_tag table" author="Farkas Gábor">
+        <sqlFile dbms="mysql"
+                 path="changelog/article_tag.sql"
+                 relativeToChangelogFile="true"/>
+    </changeSet>
+
+    <changeSet id="article_image table" author="Farkas Gábor">
+        <sqlFile dbms="mysql"
+                 path="changelog/article_image.sql"
+                 relativeToChangelogFile="true"/>
+    </changeSet>
+
+    <changeSet id="Add test data" author="Farkas Gábor">
+        <sqlFile dbms="mysql"
+                 path="changelog/test_data.sql"
+                 relativeToChangelogFile="true"/>
+    </changeSet>
+</databaseChangeLog>

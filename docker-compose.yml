@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:5.7
+    platform: linux/x86_64
+    restart: always
+    volumes:
+      - articles-db:/var/lib/mysql
+    ports:
+      - 23315:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: articles
+      MYSQL_DATABASE: articles
+      MYSQL_USER: articles
+      MYSQL_PASSWORD: articles
+    container_name: articles-database
+    networks:
+      articles:
+        aliases:
+          - articles-database
+
+  backend:
+    image: docker.io/articles/backend:latest
+    restart: always
+    ports:
+      - 8082:8081
+    container_name: articles-backend
+    networks:
+      articles:
+        aliases:
+          - articles-backend
+
+volumes:
+  articles-db:
+
+networks:
+  articles:
