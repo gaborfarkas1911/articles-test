@@ -2,7 +2,7 @@ version: '3.8'
 services:
   db:
     image: mysql:5.7
-    platform: linux/x86_64
+#    platform: linux/x86_64
     restart: always
     volumes:
       - articles-db:/var/lib/mysql
