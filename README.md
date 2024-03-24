@@ -21,6 +21,14 @@ docker-compose up -d
 http://localhost:8082/swagger-ui/index.html 
 ```
 
+### felhasználók:
+
+| username     | password  | role                           | 
+|--------------|-----------|--------------------------------|
+| user         | password  | USER                           |
+| journalist   | password  | JOURNALIST (újságíró)          |
+| editor       | password  | EDITOR_IN_CHIEF (főszerkesztő) |
+
 ### további frissítések:
 
 - Cikk mentése és frissítése folyamatok kiegészítése (jelenleg külön van):
