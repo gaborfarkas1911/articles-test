@@ -21,7 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private static final String[] excludedPages = {
-            "article/get-all-by-title/**",
             "article/all-approved",
             "article/approved-article/**",
             "article/search/**",
