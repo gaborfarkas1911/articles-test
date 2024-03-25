@@ -10,6 +10,7 @@ import com.article.backend.service.ArticleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockPart;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +37,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @Import(ArticleController.class)
@@ -114,7 +115,7 @@ class ArticleControllerTest {
         ResultActions response = mockMvc.perform(multipart("/article")
                 .part(articlePart)
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
-        response.andDo(print()).andExpect(MockMvcResultMatchers.status().isBadRequest());
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
@@ -219,6 +220,109 @@ class ArticleControllerTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof ValidationException));
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenFileIsAnImage_ExpectedOk() throws Exception {
+        byte[] imageContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("image.png"));
+
+        MockMultipartFile imageFile = new MockMultipartFile("files", "image.png", MediaType.IMAGE_PNG_VALUE, imageContentSource);
+
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .file(imageFile)
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenFirstFileIsAnImageAndGivenSecondFileIsNotAnImage_ExpectedBadRequest() throws Exception {
+        byte[] imageContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("image.png"));
+        byte[] textContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("text.txt"));
+
+        MockMultipartFile imageFile = new MockMultipartFile("files", "image.png", MediaType.IMAGE_PNG_VALUE, imageContentSource);
+
+        MockMultipartFile textFile = new MockMultipartFile("files", "text.txt", MediaType.TEXT_PLAIN_VALUE, textContentSource);
+
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .file(imageFile)
+                .file(textFile)
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenFileIsAnImageAndGivenTagIsValid_ExpectedOk() throws Exception {
+        byte[] imageContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("image.png"));
+
+        MockMultipartFile imageFile = new MockMultipartFile("files", "image.png", MediaType.IMAGE_PNG_VALUE, imageContentSource);
+
+        ArticleTag articleTag = new ArticleTag();
+        articleTag.setTag("#tag");
+
+        validArticleRequest.setTags(Collections.singletonList(articleTag));
+
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .file(imageFile)
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenFileIsNotAnImageAndGivenTagIsValid_ExpectedBadRequest() throws Exception {
+        byte[] textContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("text.txt"));
+
+        MockMultipartFile textFile = new MockMultipartFile("files", "text.txt", MediaType.TEXT_PLAIN_VALUE, textContentSource);
+
+        ArticleTag articleTag = new ArticleTag();
+        articleTag.setTag("#tag");
+
+        validArticleRequest.setTags(Collections.singletonList(articleTag));
+
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .file(textFile)
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenTagIsValidAndGivenFirstFileIsAnImageAndGivenSecondFileIsNotAnImage_ExpectedBadRequest() throws Exception {
+        byte[] imageContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("image.png"));
+        byte[] textContentSource = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("text.txt"));
+
+        MockMultipartFile imageFile = new MockMultipartFile("files", "image.png", MediaType.IMAGE_PNG_VALUE, imageContentSource);
+
+        MockMultipartFile textFile = new MockMultipartFile("files", "text.txt", MediaType.TEXT_PLAIN_VALUE, textContentSource);
+
+        ArticleTag articleTag = new ArticleTag();
+        articleTag.setTag("#tag");
+
+        validArticleRequest.setTags(Collections.singletonList(articleTag));
+
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .file(imageFile)
+                .file(textFile)
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
