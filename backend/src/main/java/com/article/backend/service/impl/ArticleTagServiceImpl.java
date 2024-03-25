@@ -13,6 +13,11 @@ public class ArticleTagServiceImpl implements ArticleTagService {
     private ArticleTagRepository repository;
 
     @Override
+    public ArticleTag getArticleTagById(Long id) {
+        return repository.findById(id).orElse(null);
+    }
+
+    @Override
     public ArticleTag saveArticleTag(ArticleTag articleTag) {
         return repository.save(articleTag);
     }
@@ -23,7 +28,7 @@ public class ArticleTagServiceImpl implements ArticleTagService {
     }
 
     @Override
-    public void deleteById(Integer id) {
+    public void deleteById(Long id) {
         repository.deleteById(id);
     }
 }

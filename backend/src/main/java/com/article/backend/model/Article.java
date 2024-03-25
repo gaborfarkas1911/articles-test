@@ -45,10 +45,14 @@ public class Article {
     private ArticleStatus status;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "article")
+    @OneToMany(mappedBy = "article",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
     private List<ArticleImage> images = new ArrayList<>();
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "article")
+    @OneToMany(mappedBy = "article",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
     private List<ArticleTag> tags = new ArrayList<>();
 }

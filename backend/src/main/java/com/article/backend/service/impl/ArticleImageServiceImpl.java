@@ -13,6 +13,11 @@ public class ArticleImageServiceImpl implements ArticleImageService {
     private ArticleImageRepository repository;
 
     @Override
+    public ArticleImage getArticleImageById(Long id) {
+        return repository.findById(id).orElse(null);
+    }
+
+    @Override
     public ArticleImage saveArticleImage(ArticleImage articleImage) {
         return repository.save(articleImage);
     }

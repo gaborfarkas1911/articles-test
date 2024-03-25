@@ -25,7 +25,8 @@ public class SecurityConfig {
             "article/approved-article/**",
             "article/search/**",
             "/swagger-ui/**",
-            "/swagger-resources/**"
+            "/swagger-resources/**",
+            "/v3/api-docs/**"
     };
 
     @Bean

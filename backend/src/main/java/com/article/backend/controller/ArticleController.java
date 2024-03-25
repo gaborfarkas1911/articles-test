@@ -1,21 +1,26 @@
 package com.article.backend.controller;
 
 import com.article.backend.model.Article;
+import com.article.backend.model.ArticleImage;
 import com.article.backend.model.ArticleTag;
 import com.article.backend.model.ReducedArticleResult;
 import com.article.backend.model.enums.ArticleCategory;
 import com.article.backend.model.enums.ArticleStatus;
 import com.article.backend.service.ArticleService;
+import com.article.backend.util.FileToBase64Utils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,13 +32,34 @@ public class ArticleController {
     private ArticleService articleService;
 
     @PreAuthorize("hasRole('JOURNALIST')")
-    @PostMapping
-    public ResponseEntity<Article> saveArticle(@RequestBody @Valid Article article) {
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<Article> saveArticle(@RequestPart @Valid Article article,
+                                               @RequestPart(required = false) MultipartFile[] files) {
         if (article.getId() != null) {
             throw new ValidationException("This request cannot contain the id.");
         }
         if (article.getStatus() == null || !article.getStatus().equals(ArticleStatus.AWAITING_APPROVAL)) {
             article.setStatus(ArticleStatus.AWAITING_APPROVAL);
+        }
+
+        if (article.getTags() != null) {
+            article.getTags().forEach(articleTag -> {
+                if (!StringUtils.hasText(articleTag.getTag()) || !articleTag.getTag().startsWith("#")) {
+                    throw new ValidationException("Incorrect tag format, the correct format is #<TAG>.");
+                }
+                articleTag.setTag(org.apache.commons.lang3.StringUtils.deleteWhitespace(articleTag.getTag()));
+            });
+        }
+
+        if (files != null && files.length > 0) {
+            article.setImages(new ArrayList<>());
+            for (MultipartFile file : files) {
+                ArticleImage newArticleImage = new ArticleImage();
+                newArticleImage.setArticle(article);
+                newArticleImage.setName(file.getOriginalFilename());
+                newArticleImage.setImage(FileToBase64Utils.getBase64ImageFromFile(file));
+                article.getImages().add(newArticleImage);
+            }
         }
         return ResponseEntity.ok(articleService.saveArticle(article));
     }
@@ -44,7 +70,6 @@ public class ArticleController {
         if (article.getId() == null) {
             throw new ValidationException("Id is required.");
         }
-
         Article existingArticle = articleService.getArticleById(article.getId());
         if (existingArticle == null) {
             throw new EntityNotFoundException("Article not found.");
@@ -116,5 +141,16 @@ public class ArticleController {
                             .orElse(null) : null;
             return new ReducedArticleResult(article.getId(), article.getTitle(), article.getSubTitle(), article.getCategory(), existingTag);
         }).toList());
+    }
+
+    @PreAuthorize("hasRole('JOURNALIST')")
+    @DeleteMapping
+    public ResponseEntity<Void> deleteArticle(@RequestParam Long id) {
+        Article existingArticle = articleService.getArticleById(id);
+        if (existingArticle == null) {
+            throw new EntityNotFoundException("Article not found.");
+        }
+        articleService.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }

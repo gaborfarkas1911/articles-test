@@ -48,7 +48,11 @@ public class TagController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteTag(@RequestParam Integer id){
+    public ResponseEntity<Void> deleteTag(@RequestParam Long id){
+        ArticleTag existingArticleTag = articleTagService.getArticleTagById(id);
+        if (existingArticleTag == null) {
+            throw new EntityNotFoundException("ArticleTag not found.");
+        }
         articleTagService.deleteById(id);
         return ResponseEntity.ok().build();
     }

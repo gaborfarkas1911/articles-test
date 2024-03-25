@@ -4,8 +4,8 @@ import com.article.backend.model.enums.ArticleCategory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@AllArgsConstructor
 @Data
+@AllArgsConstructor
 public class ReducedArticleResult {
     private Long id;
     private String title;

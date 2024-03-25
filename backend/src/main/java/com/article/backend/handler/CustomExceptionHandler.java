@@ -2,6 +2,7 @@ package com.article.backend.handler;
 
 import com.article.backend.exception.AlreadyExistsException;
 import com.article.backend.exception.FileStorageException;
+import com.article.backend.exception.NotAnImageFileException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,12 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(FileStorageException.class)
     public String handleFileStorageException(FileStorageException ex) {
+        return ex.getMessage();
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(NotAnImageFileException.class)
+    public String handleNotAnImageFileException(NotAnImageFileException ex) {
         return ex.getMessage();
     }
 }

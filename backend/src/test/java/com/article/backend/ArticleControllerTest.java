@@ -20,17 +20,22 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockPart;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @Import(ArticleController.class)
@@ -50,6 +55,7 @@ class ArticleControllerTest {
 
     private Article emptyArticle;
     private Article validArticleRequest;
+    private Article validNotApprovedArticleResponse;
     private Article validArticleResponse;
     private Article validArticleResponseWithTag;
 
@@ -62,6 +68,17 @@ class ArticleControllerTest {
         validArticleRequest.setSubTitle("subTitle");
         validArticleRequest.setContent("content");
         validArticleRequest.setCategory(ArticleCategory.SPORT);
+        validArticleRequest.setStatus(ArticleStatus.AWAITING_APPROVAL);
+
+        validNotApprovedArticleResponse = new Article();
+        validNotApprovedArticleResponse.setId(1L);
+        validNotApprovedArticleResponse.setTitle("title");
+        validNotApprovedArticleResponse.setSubTitle("subTitle");
+        validNotApprovedArticleResponse.setContent("content");
+        validNotApprovedArticleResponse.setCategory(ArticleCategory.SPORT);
+        validNotApprovedArticleResponse.setStatus(ArticleStatus.AWAITING_APPROVAL);
+        validNotApprovedArticleResponse.setTags(new ArrayList<>());
+        validNotApprovedArticleResponse.setImages(new ArrayList<>());
 
         validArticleResponse = new Article();
         validArticleResponse.setId(1L);
@@ -83,7 +100,6 @@ class ArticleControllerTest {
 
         ArticleTag validArticleTag = new ArticleTag();
         validArticleTag.setId(1L);
-        validArticleTag.setArticle(validArticleResponseWithTag);
         validArticleTag.setTag("#tag");
 
         validArticleResponseWithTag.setTags(Collections.singletonList(validArticleTag));
@@ -91,73 +107,118 @@ class ArticleControllerTest {
     }
 
     @Test
-    void saveArticle_WhenEmptyRequest_ExpectedBadRequest() throws Exception {
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(emptyArticle)));
-        response.andExpect(MockMvcResultMatchers.status().isBadRequest());
+    void saveArticle_WhenGivenArticleIsEmpty_ExpectedBadRequest() throws Exception {
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(emptyArticle).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andDo(print()).andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenArticleIsValidAndIdIsPresent_ExpectedValidationExceptionAndBadRequestStatus() throws Exception {
+    void saveArticle_WhenGivenArticleIsValidAndIdIsPresent_ExpectedValidationExceptionAndBadRequestStatus() throws Exception {
         validArticleRequest.setId(1L);
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(result -> assertTrue(result.getResolvedException() instanceof ValidationException))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenTitleIsNull_ExpectedBadRequest() throws Exception {
+    void saveArticle_WhenGivenArticleIsValidAndTitleIsNull_ExpectedBadRequest() throws Exception {
         validArticleRequest.setTitle(null);
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenSubTitleIsNull_ExpectedBadRequest() throws Exception {
+    void saveArticle_WhenGivenArticleIsValidAndSubTitleIsNull_ExpectedBadRequest() throws Exception {
         validArticleRequest.setSubTitle(null);
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenContentIsNull_ExpectedBadRequest() throws Exception {
+    void saveArticle_WhenGivenArticleIsValidAndContentIsNull_ExpectedBadRequest() throws Exception {
         validArticleRequest.setContent(null);
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenCategoryIsNull_ExpectedBadRequest() throws Exception {
+    void saveArticle_WhenGivenArticleIsValidAndCategoryIsNull_ExpectedBadRequest() throws Exception {
         validArticleRequest.setCategory(null);
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
-    void saveArticle_WhenStatusIsNull_ExpectedOk() throws Exception {
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+    void saveArticle_WhenGivenArticleIsValidAndStatusIsNull_ExpectedOk() throws Exception {
+        when(articleService.saveArticle(nullable(Article.class))).thenReturn(validNotApprovedArticleResponse);
+
+        validArticleRequest.setStatus(null);
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
-    void saveArticle_WhenArticleIsValid_ExpectedOk() throws Exception {
-        ResultActions response = mockMvc.perform(post("/article")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validArticleRequest)));
+    void saveArticle_WhenGivenArticleIsValidAndStatusIsApproved_ExpectedOk() throws Exception {
+        when(articleService.saveArticle(nullable(Article.class))).thenReturn(validNotApprovedArticleResponse);
+
+        validArticleRequest.setStatus(ArticleStatus.APPROVED);
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
         response.andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void saveArticle_WhenGivenArticleIsValidAndGivenTagIsIncorrect_ExpectedValidationExceptionWithBadRequestStatus() throws Exception {
+        ArticleTag articleTagRequest = new ArticleTag();
+        articleTagRequest.setTag("a");
+        validArticleRequest.setTags(Collections.singletonList(articleTagRequest));
+        MockPart articlePart = new MockPart("article", objectMapper.writeValueAsString(validArticleRequest).getBytes(StandardCharsets.UTF_8));
+        articlePart.getHeaders().put("Content-Type", Collections.singletonList("application/json"));
+
+        ResultActions response = mockMvc.perform(multipart("/article")
+                .part(articlePart)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE));
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof ValidationException));
     }
 
     @Test
@@ -201,16 +262,16 @@ class ArticleControllerTest {
     }
 
     @Test
-    void search_WhenEmptyRequest_ExpectedOk() throws Exception {
-        when(articleService.findAll(null, null, ArticleStatus.APPROVED, null))
+    void search_WhenEmptyRequest_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll(nullable(String.class), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
-        String expected = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
+        String expectedContent = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
 
         ResultActions response = mockMvc.perform(get("/article/search")
                 .contentType(MediaType.APPLICATION_JSON));
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(content().string(expected));
+                .andExpect(content().string(expectedContent));
     }
 
     @Test
@@ -230,22 +291,36 @@ class ArticleControllerTest {
     }
 
     @Test
+    void search_WhenValidRequestAndApprovedStatusNotFound_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll("title", ArticleCategory.SPORT, ArticleStatus.AWAITING_APPROVAL, "#tag"))
+                .thenReturn(Collections.singletonList(validArticleResponseWithTag));
+
+        ResultActions response = mockMvc.perform(get("/article/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("title", "title")
+                .param("category", ArticleCategory.SPORT.toString())
+                .param("tag", "#tag"));
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string("[]"));
+    }
+
+    @Test
     void search_WhenTheGivenCategoryFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll(null, ArticleCategory.SPORT, ArticleStatus.APPROVED, null))
+        when(articleService.findAll(nullable(String.class), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
-        String expected = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
+        String expectedContent = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
 
         ResultActions response = mockMvc.perform(get("/article/search")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("category", ArticleCategory.SPORT.toString()));
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(content().string(expected));
+                .andExpect(content().string(expectedContent));
     }
 
     @Test
     void search_WhenTheGivenCategoryNotFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll(null, ArticleCategory.SPORT, ArticleStatus.APPROVED, null))
+        when(articleService.findAll(nullable(String.class), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
         ResultActions response = mockMvc.perform(get("/article/search")
@@ -257,7 +332,7 @@ class ArticleControllerTest {
 
     @Test
     void search_WhenTheGivenTagFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll(null, null, ArticleStatus.APPROVED, "#tag"))
+        when(articleService.findAll(nullable(String.class), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), eq("#tag")))
                 .thenReturn(Collections.singletonList(validArticleResponseWithTag));
 
         String expectedContent = "[{\"id\":2,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":{\"id\":1,\"tag\":\"#tag\"}}]";
@@ -271,7 +346,7 @@ class ArticleControllerTest {
 
     @Test
     void search_WhenTheGivenTagNotFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll(null, null, ArticleStatus.APPROVED, "#tag"))
+        when(articleService.findAll(nullable(String.class), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), eq("#tag")))
                 .thenReturn(Collections.singletonList(validArticleResponseWithTag));
 
         ResultActions response = mockMvc.perform(get("/article/search")
@@ -292,21 +367,21 @@ class ArticleControllerTest {
 
     @Test
     void search_WhenTheGivenTitleFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll("title", null, ArticleStatus.APPROVED, null))
+        when(articleService.findAll(eq("title"), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
-        String expected = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
+        String expectedContent = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
 
         ResultActions response = mockMvc.perform(get("/article/search")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("title", "title"));
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(content().string(expected));
+                .andExpect(content().string(expectedContent));
     }
 
     @Test
     void search_WhenTheGivenTitleNotFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll("title", null, ArticleStatus.APPROVED, null))
+        when(articleService.findAll(eq("title"), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
         ResultActions response = mockMvc.perform(get("/article/search")
@@ -318,7 +393,7 @@ class ArticleControllerTest {
 
     @Test
     void search_WhenTheGivenTitleFoundAndCategoryNotFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll("title", ArticleCategory.SPORT, ArticleStatus.APPROVED, null))
+        when(articleService.findAll(eq("title"), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), nullable(String.class)))
                 .thenReturn(Collections.singletonList(validArticleResponse));
 
         ResultActions response = mockMvc.perform(get("/article/search")
@@ -343,8 +418,47 @@ class ArticleControllerTest {
     }
 
     @Test
+    void search_WhenTheGivenTitleFoundAndTagIsIncorrect_ExpectedValidationExceptionAndBadRequestStatus() throws Exception {
+        when(articleService.findAll(eq("title"), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), eq("#tag")))
+                .thenReturn(Collections.singletonList(validArticleResponseWithTag));
+
+        ResultActions response = mockMvc.perform(get("/article/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("title", "title")
+                .param("tag", "a"));
+        response.andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof ValidationException));
+    }
+
+    @Test
+    void search_WhenTheGivenTagFoundAndCategoryNotFound_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll(nullable(String.class), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), eq("#tag")))
+                .thenReturn(Collections.singletonList(validArticleResponseWithTag));
+
+        ResultActions response = mockMvc.perform(get("/article/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("title", "a")
+                .param("tag", "#tag"));
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string("[]"));
+    }
+
+    @Test
+    void search_WhenTheGivenTitleFoundAndTagNotFound_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll(eq("title"), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), eq("#tag")))
+                .thenReturn(Collections.singletonList(validArticleResponseWithTag));
+
+        ResultActions response = mockMvc.perform(get("/article/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("title", "title")
+                .param("tag", "#tg"));
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string("[]"));
+    }
+
+    @Test
     void search_WhenTheGivenTagAndTitleFound_ExpectedOkAndMatchingContent() throws Exception {
-        when(articleService.findAll("title", null, ArticleStatus.APPROVED, "#tag"))
+        when(articleService.findAll(eq("title"), nullable(ArticleCategory.class), eq(ArticleStatus.APPROVED), eq("#tag")))
                 .thenReturn(Collections.singletonList(validArticleResponseWithTag));
 
         String expectedContent = "[{\"id\":2,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":{\"id\":1,\"tag\":\"#tag\"}}]";
@@ -358,15 +472,32 @@ class ArticleControllerTest {
     }
 
     @Test
-    void search_WhenTheGivenTitleFoundAndTagIsIncorrect_ExpectedValidationExceptionAndBadRequestStatus() throws Exception {
-        when(articleService.findAll("title", null, ArticleStatus.APPROVED, "#tag"))
+    void search_WhenTheGivenTagAndCategoryFound_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll(nullable(String.class), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), eq("#tag")))
                 .thenReturn(Collections.singletonList(validArticleResponseWithTag));
+
+        String expectedContent = "[{\"id\":2,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":{\"id\":1,\"tag\":\"#tag\"}}]";
+
+        ResultActions response = mockMvc.perform(get("/article/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("tag", "#tag")
+                .param("category", ArticleCategory.SPORT.toString()));
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string(expectedContent));
+    }
+
+    @Test
+    void search_WhenTheGivenTitleAndCategoryFound_ExpectedOkAndMatchingContent() throws Exception {
+        when(articleService.findAll(eq("title"), eq(ArticleCategory.SPORT), eq(ArticleStatus.APPROVED), nullable(String.class)))
+                .thenReturn(Collections.singletonList(validArticleResponse));
+
+        String expectedContent = "[{\"id\":1,\"title\":\"title\",\"subTitle\":\"subTitle\",\"category\":\"SPORT\",\"tag\":null}]";
 
         ResultActions response = mockMvc.perform(get("/article/search")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("title", "title")
-                .param("tag", "a"));
-        response.andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof ValidationException));
+                .param("category", ArticleCategory.SPORT.toString()));
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string(expectedContent));
     }
 }

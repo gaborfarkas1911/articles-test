@@ -18,4 +18,6 @@ public interface ArticleService {
     List<Article> listArticles();
 
     List<Article> listArticlesByStatus(ArticleStatus statusStatus);
+
+    void deleteById(Long id);
 }
